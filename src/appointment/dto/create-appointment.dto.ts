@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, Matches } from 'class-validator';
 import { IsSameOrAfterToday } from 'src/utils/decorators/is-same-or-after-today.decorator';
+import { IsWeekday } from 'src/utils/decorators/is-weekday.decorator';
 
 export class CreateAppointmentDto {
   @IsString()
@@ -14,6 +15,7 @@ export class CreateAppointmentDto {
   @IsNotEmpty()
   @ApiProperty()
   @IsSameOrAfterToday({ message: 'Date must be today or in the future' })
+  @IsWeekday()
   date: string;
 
   @IsNotEmpty()
