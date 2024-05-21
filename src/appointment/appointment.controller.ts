@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   Res,
+  HttpStatus,
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
@@ -24,13 +25,17 @@ export class AppointmentController {
     @Body() createAppointmentDto: CreateAppointmentDto,
     @Res() res: Response,
   ) {
-    const slots = await this.appointmentService.findAll(
-      createAppointmentDto.date,
-    );
-    // await this.appointmentService.create(createAppointmentDto);
+    const { date, time } = createAppointmentDto;
+    try {
+      await this.appointmentService.validateAvailableAppointments(date, time);
+      await this.appointmentService.create(createAppointmentDto);
+    } catch (error) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: error.message,
+      });
+    }
 
     return res.json({
-      data: slots,
       message: 'Appointments created',
     });
   }

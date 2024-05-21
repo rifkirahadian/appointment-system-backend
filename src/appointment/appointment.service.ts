@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { Appointment } from './entities/appointment.entity';
@@ -8,7 +8,7 @@ import { Sequelize } from 'sequelize-typescript';
 export class AppointmentService {
   constructor(
     @Inject('APPOINTMENTS_REPOSITORY')
-    private appointmentsRepository: typeof Appointment
+    private appointmentsRepository: typeof Appointment,
   ) {}
 
   create(createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
@@ -25,6 +25,21 @@ export class AppointmentService {
         ),
       },
     });
+  }
+
+  async validateAvailableAppointments(date: string, time: string) {
+    const appointments = await this.findAvailableSlots(date);
+    const isAvailable = appointments.find((item) => item.time === time);
+    if (!isAvailable) {
+      throw new BadRequestException('This time is not available');
+    }
+
+    const isTaken = appointments.find(
+      (item) => item.time === time && item.available_slots === 0,
+    );
+    if (isTaken) {
+      throw new BadRequestException('This time has been taken');
+    }
   }
 
   async findAvailableSlots(date: string) {
