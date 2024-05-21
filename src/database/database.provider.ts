@@ -1,4 +1,5 @@
 import { Sequelize } from 'sequelize-typescript';
+import { Appointment } from 'src/appointment/entities/appointment.entity';
 
 export const databaseProviders = [
   {
@@ -8,7 +9,7 @@ export const databaseProviders = [
         dialect: 'sqlite',
         storage: '.db/data.sqlite3',
       });
-      sequelize.addModels([]);
+      sequelize.addModels([Appointment]);
       await sequelize.sync();
       return sequelize;
     },

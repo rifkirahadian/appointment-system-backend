@@ -10,4 +10,7 @@ export class Appointment extends Model {
 
   @Column
   time: string;
+
+  @Column
+  status: string;
 }
