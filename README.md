@@ -32,6 +32,13 @@
 $ npm install
 ```
 
+## Setup Database
+
+```bash
+# exec migration
+$ npx sequelize-cli db:migrate
+```
+
 ## Running the app
 
 ```bash
