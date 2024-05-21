@@ -3,18 +3,16 @@ import {
   Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
   Query,
   Res,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
-import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { ApiQuery } from '@nestjs/swagger';
 import { Response } from 'express';
+import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
 
 @Controller('appointment')
 export class AppointmentController {
@@ -48,21 +46,28 @@ export class AppointmentController {
     return res.json(slots);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.appointmentService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateAppointmentDto: UpdateAppointmentDto,
+  @Post('cancel')
+  async cancel(
+    @Body() cancelAppointmentDto: CancelAppointmentDto,
+    @Res() res: Response,
   ) {
-    return this.appointmentService.update(+id, updateAppointmentDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.appointmentService.remove(+id);
+    const { date, time } = cancelAppointmentDto;
+    try {
+      const appointment = await this.appointmentService.findOneByDateTime(
+        date,
+        time,
+      );
+      if (!appointment) {
+        throw new BadRequestException('No Appointment at the given time');
+      }
+      await this.appointmentService.cancel(appointment);
+    } catch (error) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: error.message,
+      });
+    }
+    return res.json({
+      message: 'Appointments canceled',
+    });
   }
 }

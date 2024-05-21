@@ -1,6 +1,5 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
-import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { Appointment } from './entities/appointment.entity';
 import { Sequelize } from 'sequelize-typescript';
 
@@ -16,13 +15,14 @@ export class AppointmentService {
     return this.appointmentsRepository.create({ date, time, name });
   }
 
-  async findAll(date: string): Promise<Appointment[]> {
+  async findAllActives(date: string): Promise<Appointment[]> {
     return this.appointmentsRepository.findAll({
       where: {
         date: Sequelize.where(
           Sequelize.fn('strftime', '%Y-%m-%d', Sequelize.col('date')),
           date,
         ),
+        status: 'active',
       },
     });
   }
@@ -43,7 +43,7 @@ export class AppointmentService {
   }
 
   async findAvailableSlots(date: string) {
-    const appointments = await this.findAll(date);
+    const appointments = await this.findAllActives(date);
     const appointmentsTime = appointments.map((item) => item.time);
     const dates = Array.from(Array(9).keys()).map((item) => item + 9);
     const slots = [];
@@ -64,15 +64,22 @@ export class AppointmentService {
     return slots;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} appointment`;
+  async findOneByDateTime(date: string, time: string): Promise<Appointment> {
+    return this.appointmentsRepository.findOne({
+      where: {
+        date: Sequelize.where(
+          Sequelize.fn('strftime', '%Y-%m-%d', Sequelize.col('date')),
+          date,
+        ),
+        time,
+      },
+    });
   }
 
-  update(id: number, updateAppointmentDto: UpdateAppointmentDto) {
-    return `This action updates a #${id} appointment`;
-  }
+  async cancel(appointment: Appointment): Promise<Appointment> {
+    appointment.status = 'canceled';
+    await appointment.save();
 
-  remove(id: number) {
-    return `This action removes a #${id} appointment`;
+    return appointment;
   }
 }
