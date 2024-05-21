@@ -13,6 +13,7 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { ApiQuery } from '@nestjs/swagger';
 import { Response } from 'express';
 import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
+import { FindAvailableSlotsDto } from './dto/find-appointment.dto';
 
 @Controller('appointment')
 export class AppointmentController {
@@ -40,7 +41,8 @@ export class AppointmentController {
 
   @Get()
   @ApiQuery({ name: 'date' })
-  async findAll(@Query('date') date, @Res() res: Response) {
+  async findAll(@Query() query: FindAvailableSlotsDto, @Res() res: Response) {
+    const { date } = query;
     const slots = await this.appointmentService.findAvailableSlots(date);
 
     return res.json(slots);
