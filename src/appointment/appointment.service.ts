@@ -48,6 +48,7 @@ export class AppointmentService {
     const slotDuration = this.configService.get<number>(
       'appointment.slot.duration',
     );
+    const maxSlots = this.configService.get<number>('appointment.slot.max');
     const appointments = await this.findAllActives(date);
     const appointmentsTime = appointments.map((item) => item.time);
 
@@ -58,10 +59,15 @@ export class AppointmentService {
     for (let hour = startHour; hour < endHour; hour++) {
       for (let minute = 0; minute < 60; minute += slotDuration) {
         const time = `${hour > 9 ? '' : '0'}${hour}:${minute === 0 ? '00' : minute}`;
+
+        const bookedSlots = appointmentsTime.filter((t) => t === time).length;
+
+        const availableSlots = Math.max(0, maxSlots - bookedSlots);
+
         slots.push({
           date,
           time,
-          available_slots: appointmentsTime.indexOf(time) < 0 ? 1 : 0,
+          available_slots: availableSlots,
         });
       }
     }
