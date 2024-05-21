@@ -2,12 +2,14 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { Appointment } from './entities/appointment.entity';
 import { Sequelize } from 'sequelize-typescript';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AppointmentService {
   constructor(
     @Inject('APPOINTMENTS_REPOSITORY')
     private appointmentsRepository: typeof Appointment,
+    private configService: ConfigService,
   ) {}
 
   create(createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
@@ -43,24 +45,27 @@ export class AppointmentService {
   }
 
   async findAvailableSlots(date: string) {
+    const slotDuration = this.configService.get<number>(
+      'appointment.slot.duration',
+    );
     const appointments = await this.findAllActives(date);
     const appointmentsTime = appointments.map((item) => item.time);
-    const dates = Array.from(Array(9).keys()).map((item) => item + 9);
+
+    const startHour = 9;
+    const endHour = 18;
     const slots = [];
-    dates.forEach((item) => {
-      const time1 = `${item > 9 ? '' : '0'}${item}:00`;
-      const time2 = `${item > 9 ? '' : '0'}${item}:30`;
-      slots.push({
-        date,
-        time: time1,
-        available_slots: appointmentsTime.indexOf(time1) < 0 ? 1 : 0,
-      });
-      slots.push({
-        date,
-        time: time2,
-        available_slots: appointmentsTime.indexOf(time2) < 0 ? 1 : 0,
-      });
-    });
+
+    for (let hour = startHour; hour < endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += slotDuration) {
+        const time = `${hour > 9 ? '' : '0'}${hour}:${minute === 0 ? '00' : minute}`;
+        slots.push({
+          date,
+          time,
+          available_slots: appointmentsTime.indexOf(time) < 0 ? 1 : 0,
+        });
+      }
+    }
+
     return slots;
   }
 
