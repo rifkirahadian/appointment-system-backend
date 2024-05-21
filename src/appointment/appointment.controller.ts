@@ -24,17 +24,21 @@ export class AppointmentController {
     @Body() createAppointmentDto: CreateAppointmentDto,
     @Res() res: Response,
   ) {
-    await this.appointmentService.create(createAppointmentDto);
+    const slots = await this.appointmentService.findAll(
+      createAppointmentDto.date,
+    );
+    // await this.appointmentService.create(createAppointmentDto);
 
     return res.json({
+      data: slots,
       message: 'Appointments created',
     });
   }
 
   @Get()
   @ApiQuery({ name: 'date' })
-  findAll(@Query('date') date, @Res() res: Response) {
-    const slots = this.appointmentService.findAll(date);
+  async findAll(@Query('date') date, @Res() res: Response) {
+    const slots = await this.appointmentService.findAvailableSlots(date);
 
     return res.json(slots);
   }

@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { Appointment } from './entities/appointment.entity';
+import { Sequelize } from 'sequelize-typescript';
 
 @Injectable()
 export class AppointmentService {
@@ -15,19 +16,34 @@ export class AppointmentService {
     return this.appointmentsRepository.create({ date, time, name });
   }
 
-  findAll(date: string) {
+  async findAll(date: string): Promise<Appointment[]> {
+    return this.appointmentsRepository.findAll({
+      where: {
+        date: Sequelize.where(
+          Sequelize.fn('strftime', '%Y-%m-%d', Sequelize.col('date')),
+          date,
+        ),
+      },
+    });
+  }
+
+  async findAvailableSlots(date: string) {
+    const appointments = await this.findAll(date);
+    const appointmentsTime = appointments.map((item) => item.time);
     const dates = Array.from(Array(9).keys()).map((item) => item + 9);
     const slots = [];
     dates.forEach((item) => {
+      const time1 = `${item > 9 ? '' : '0'}${item}:00`;
+      const time2 = `${item > 9 ? '' : '0'}${item}:30`;
       slots.push({
         date,
-        time: `${item}:00`,
-        available_slots: 1,
+        time: time1,
+        available_slots: appointmentsTime.indexOf(time1) < 0 ? 1 : 0,
       });
       slots.push({
         date,
-        time: `${item}:30`,
-        available_slots: 1,
+        time: time2,
+        available_slots: appointmentsTime.indexOf(time2) < 0 ? 1 : 0,
       });
     });
     return slots;
